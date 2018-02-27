@@ -4,6 +4,15 @@ Sparse Subspace Constrained Partial Least Squares
 
 `sscpls` is an R package that provides an implementation of an ADMM algorithm for sparse subspace constrained PLS.
 
+### Install instructions
+
+Use devtools to install:
+
+``` r
+#library(devtools)
+#install_github("sscpls", "matt-sutton")
+```
+
 #### Example 1 (Orthogonal components)
 
 The PLS direction vectors are sparse using ℓ<sub>1</sub> penalty term and must lie in a subspace which ensurse orthogonality of components. See below for example and comparison to mixOmics (uses naive SPLS-NIPALS deflation).
@@ -53,7 +62,8 @@ Simulate sparse data as discribed in Li 2014.
 
 ``` r
 ##-- Short simulation as in Li --#
-p <- 50; n<- 50
+set.seed(1)
+p <- 60; n<- 50
 
 Sigma <- matrix(0.5, nrow = p, ncol = p)
 for(i in 1:p) { for(j in 1:p){Sigma[i,j] <- 0.5^abs(i-j)} }
@@ -87,54 +97,53 @@ cbind(fit_B[,,4], Betastar)[1:15,] # only show some all are nonzero
 ```
 
     ##            [,1] [,2]
-    ## X1   0.71591314  1.0
-    ## X2  -0.46220893 -0.8
-    ## X3   0.12199539  0.6
-    ## X4   0.29211324  0.0
-    ## X5  -0.28105272  0.0
-    ## X6  -1.02039122 -1.5
-    ## X7   0.45712985  0.5
-    ## X8   0.92584296  1.2
-    ## X9   0.27505666  0.0
-    ## X10  0.25890065  0.0
-    ## X11 -0.08125676  0.0
-    ## X12  0.05371898  0.0
-    ## X13 -0.07516706  0.0
-    ## X14 -0.10896501  0.0
-    ## X15 -0.02872191  0.0
+    ## X1   0.54536013  1.0
+    ## X2  -0.28020479 -0.8
+    ## X3   0.42767293  0.6
+    ## X4   0.12172604  0.0
+    ## X5  -0.33034597  0.0
+    ## X6  -0.96705289 -1.5
+    ## X7   0.53214948  0.5
+    ## X8   0.87387024  1.2
+    ## X9   0.02515786  0.0
+    ## X10 -0.07873966  0.0
+    ## X11 -0.03711091  0.0
+    ## X12  0.21280074  0.0
+    ## X13 -0.28873248  0.0
+    ## X14 -0.26195036  0.0
+    ## X15 -0.20454224  0.0
 
 ``` r
 sum(fit_B[,,4]) # Compositional PLS satisfies sum(B) = 0 
 ```
 
-    ## [1] -1.039099e-15
+    ## [1] 2.709638e-15
 
 Now using sparsity
 
 ``` r
-fit <- sscpls(Xtilde, y, ncomp = 3, lambda = 0.65, scale = F, compositional = T)
+fit <- sscpls(Xtilde, y, ncomp = 3, lambda = 0.85, scale = F, compositional = T)
 
 Beta_comps <- matrix(unlist(fit$Beta), ncol = 3) # Get Matrix of beta estimates at each component
 show_nonzero(cbind(Beta_comps,Betastar))
 ```
 
-    ##             [,1]       [,2]        [,3] [,4]
-    ##  [1,]  0.0000000  0.7209865  0.72098650  1.0
-    ##  [2,]  0.0000000  0.0000000 -0.16309326 -0.8
-    ##  [3,]  0.0000000  0.0000000  0.00000000  0.6
-    ##  [4,] -0.4663681 -1.2871791 -1.28717914 -1.5
-    ##  [5,]  0.0000000  0.0000000  0.00000000  0.5
-    ##  [6,]  1.4439788  1.5437385  1.54373853  1.2
-    ##  [7,]  0.0000000  0.0000000  0.07241004  0.0
-    ##  [8,]  0.0000000  0.0000000  0.30708988  0.0
-    ##  [9,]  0.0000000  0.0000000 -0.21639184  0.0
-    ## [10,] -0.9775003 -0.9775003 -0.97750028 -1.0
+    ##            [,1]       [,2]        [,3] [,4]
+    ##  [1,]  0.000000  0.5653049  0.56530494  1.0
+    ##  [2,]  0.000000  0.0000000 -0.37275514 -0.8
+    ##  [3,]  0.000000  0.0000000  0.00000000  0.6
+    ##  [4,]  0.000000 -1.1358419 -1.14603966 -1.5
+    ##  [5,]  0.000000  0.0000000  0.04524048  0.5
+    ##  [6,]  1.034775  1.2002163  1.20021626  1.2
+    ##  [7,]  0.000000  0.0000000  0.33773541  0.0
+    ##  [8,]  0.000000  0.4051827  0.40518270  0.0
+    ##  [9,] -1.034879 -1.0348790 -1.03487895 -1.0
 
 ``` r
 sum(fit$Beta[[3]]) # Compositional PLS satisfies sum(B) = 0  
 ```
 
-    ## [1] 6.043674e-05
+    ## [1] 6.034395e-06
 
 Alternative Sparse PLS methods are not able to retain the sum of beta is zero constraint.
 

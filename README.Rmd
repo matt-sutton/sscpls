@@ -12,6 +12,14 @@ Sparse Subspace Constrained Partial Least Squares
 
 `sscpls` is an R package that provides an implementation of an ADMM algorithm for sparse subspace constrained PLS.
 
+### Install instructions
+Use devtools to install:
+
+```{r}
+#library(devtools)
+#install_github("sscpls", "matt-sutton")
+```
+
 #### Example 1 (Orthogonal components)
 
 The PLS direction vectors are sparse using $\ell_1$ penalty term and must lie in a subspace which ensurse orthogonality of components. See below for example and comparison to mixOmics (uses naive SPLS-NIPALS deflation). 
@@ -52,7 +60,8 @@ clrt <- function(x){
 Simulate sparse data as discribed in Li 2014.
 ```{r}
 ##-- Short simulation as in Li --#
-p <- 50; n<- 50
+set.seed(1)
+p <- 60; n<- 50
 
 Sigma <- matrix(0.5, nrow = p, ncol = p)
 for(i in 1:p) { for(j in 1:p){Sigma[i,j] <- 0.5^abs(i-j)} }
@@ -90,7 +99,7 @@ sum(fit_B[,,4]) # Compositional PLS satisfies sum(B) = 0
 Now using sparsity
 
 ```{r}
-fit <- sscpls(Xtilde, y, ncomp = 3, lambda = 0.65, scale = F, compositional = T)
+fit <- sscpls(Xtilde, y, ncomp = 3, lambda = 0.85, scale = F, compositional = T)
 
 Beta_comps <- matrix(unlist(fit$Beta), ncol = 3) # Get Matrix of beta estimates at each component
 show_nonzero(cbind(Beta_comps,Betastar))
