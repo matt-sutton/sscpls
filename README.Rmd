@@ -34,7 +34,8 @@ X <- scale(X)
 beta <- c(1:5, rep(0, p-5))
 y<-X%*%beta + matrix(rnorm(n))
 
-fit <- sscpls(X, y, ncomp = 4, lambda = 0.7, scale = F)
+fitcv <- cv_sscpls(X, y, K = 1:4, lambda = 1:9/10, fold = 10)
+fit <- sscpls(X, y, ncomp = 4, lambda = 0.9, scale = F)
 
 Beta_comps <- matrix(unlist(fit$Beta), ncol = 4) # Get Matrix of beta estimates at each component
 show_nonzero(cbind(Beta_comps, beta))

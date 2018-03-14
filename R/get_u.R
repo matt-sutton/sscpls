@@ -35,7 +35,7 @@ get_u <- function(ell, proj, lambda, rho=1, abstol = 1e-04, reltol= 1e-02, max_i
 
   p <- length(ell)
 
-  xi <- if(is.null(xi_init)) rep(0,p) else xi_init
+  xi <- rep(0,p)
   zold <- z <- rep(0, p)
 
   ell <- ell/rho; lambda <- lambda/rho
