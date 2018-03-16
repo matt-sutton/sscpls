@@ -39,10 +39,6 @@ fit <- sscpls(X, y, ncomp = fitcv$K, lambda = fitcv$lambda.1se, scale = F)
 
 Beta_comps <- matrix(unlist(fit$Beta), ncol = 4) # Get Matrix of beta estimates at each component
 show_nonzero(cbind(Beta_comps, beta))
-
-M <- crossprod(X, y)
-diag(crossprod(t(M)%*%fit$V)) # objective maximised
-# round(crossprod(fit$x.scores),digits = 4)  # constraint satisfied
 ```
 
 The objective and orthogonality constraints:
@@ -60,10 +56,10 @@ Replication of the simulation study of the subspace constrained PLS paper. The s
 
 See the subfolder replication. 
 
-```{r fig.width=1, fig.height=10,echo=FALSE}
+```{r,echo=FALSE}
 library(png)
 library(grid)
-img <- readPNG("replication/results/figure.png")
-grid.raster(img)
+img <- "replication/results/figure.png"
+knitr::include_graphics(img)
 ```
 

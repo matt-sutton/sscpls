@@ -41,17 +41,6 @@ show_nonzero(cbind(Beta_comps, beta))
     ## [4,] 3.659768 4.2600073 4.175163 4.1479382    4
     ## [5,] 4.936481 4.9364808 4.936481 4.9364808    5
 
-``` r
-M <- crossprod(X, y)
-diag(crossprod(t(M)%*%fit$V)) # objective maximised
-```
-
-    ## [1] 88652.260 35412.917  6856.863  1401.428
-
-``` r
-# round(crossprod(fit$x.scores),digits = 4)  # constraint satisfied
-```
-
 The objective and orthogonality constraints:
 
 ``` r
@@ -79,4 +68,4 @@ Replication of the simulation study of the subspace constrained PLS paper. The s
 
 See the subfolder replication.
 
-![](README_files/figure-markdown_github/unnamed-chunk-4-1.png)<!-- -->
+![](replication/results/figure.png)<!-- -->
