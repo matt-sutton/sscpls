@@ -22,10 +22,10 @@ Use devtools to install:
 
 #### Example 1 (Orthogonal components)
 
-The PLS direction vectors are sparse using $\ell_1$ penalty term and must lie in a subspace which ensurse orthogonality of components. See below for example and comparison to mixOmics (uses naive SPLS-NIPALS deflation). 
+The PLS direction vectors are sparse using $\ell_1$ penalty term and must lie in a subspace which ensurse orthogonality of components. See below for an example.
 
 ```{r}
-set.seed(1)
+set.seed(0)
 library(sscpls)
 n<-50 # number of observations
 p<-50 # number of variables
@@ -35,83 +35,35 @@ beta <- c(1:5, rep(0, p-5))
 y<-X%*%beta + matrix(rnorm(n))
 
 fitcv <- cv_sscpls(X, y, K = 1:4, lambda = 1:9/10, fold = 10)
-fit <- sscpls(X, y, ncomp = 4, lambda = 0.9, scale = F)
+fit <- sscpls(X, y, ncomp = fitcv$K, lambda = fitcv$lambda.1se, scale = F)
 
 Beta_comps <- matrix(unlist(fit$Beta), ncol = 4) # Get Matrix of beta estimates at each component
 show_nonzero(cbind(Beta_comps, beta))
 
-# sum(cov(X%*%fit$Uorg, y)) # objective maximised
+M <- crossprod(X, y)
+diag(crossprod(t(M)%*%fit$V)) # objective maximised
 # round(crossprod(fit$x.scores),digits = 4)  # constraint satisfied
 ```
 
-
-#### Example 2 (Compositional data)
-
-PLS direction vectors for compositional data. Following the process for non-sparse PLS on compositional data we use the centered log transform of the data. 
-
+The objective and orthogonality constraints:
 ```{r}
-##-- centered log transform --#
-clrt <- function(x){
-  X <- t(log(x))
-  X <- t(scale(X, center = T, scale = F))
-  return(X)
-}
+M <- crossprod(X, y)
+# objective maximised
+diag(crossprod(t(M)%*%fit$V)) 
+# constraint satisfied
+round(crossprod(fit$x.scores),digits = 4)  
 ```
 
-Simulate sparse data as discribed in Li 2014.
-```{r}
-##-- Short simulation as in Li --#
-set.seed(1)
-p <- 60; n<- 50
+### Replication of simulation study
 
-Sigma <- matrix(0.5, nrow = p, ncol = p)
-for(i in 1:p) { for(j in 1:p){Sigma[i,j] <- 0.5^abs(i-j)} }
+Replication of the simulation study of the subspace constrained PLS paper. The simulation uses the package simrel for generating data from a sparse subspace. 
 
-theta <- matrix(0, nrow = 1, ncol = p)
-theta[1:5] <- log(0.5*p)
+See the subfolder replication. 
 
-W <- MASS::mvrnorm(n = n, mu = theta, Sigma = Sigma)
-X <- exp(W)
-X <- t(apply(X, 1, function(x) x/sum(x)))
-# rowSums(X) # All lie in the simplex >0 and sum to 1
-
-Z <- t(apply(X, 1, function(z) log(z/z[p])))
-
-Betastar <- matrix(c(1, -0.8, 0.6, 0, 0,-1.5,0.5, 1.2, rep(0, p - 8)))
-Betastar[p] <- -sum(Betastar)
-error <- matrix(rnorm(n, sd = 0.5))
-
-y <- Z%*%Betastar + error
+```{r fig.width=1, fig.height=10,echo=FALSE}
+library(png)
+library(grid)
+img <- readPNG("replication/results/figure.png")
+grid.raster(img)
 ```
 
-Standard compositional PLS (see Hinkle 1995). Implemented without sparsity.
-
-```{r, message=F, warning=F}
-Xtilde <- clrt(X)
-library(mixOmics)
-fit_mix <- pls(Xtilde, y, ncomp = 5, scale = F, mode = "regression")
-fit_B <- predict(fit_mix, newdata = fit_mix$X)$B.hat
-
-cbind(fit_B[,,4], Betastar)[1:15,] # only show some all are nonzero
-
-sum(fit_B[,,4]) # Compositional PLS satisfies sum(B) = 0 
-```
-
-Now using sparsity
-
-```{r}
-fit <- sscpls(Xtilde, y, ncomp = 3, lambda = 0.85, scale = F, compositional = T)
-
-Beta_comps <- matrix(unlist(fit$Beta), ncol = 3) # Get Matrix of beta estimates at each component
-show_nonzero(cbind(Beta_comps,Betastar))
-
-sum(fit$Beta[[3]]) # Compositional PLS satisfies sum(B) = 0  
-```
-
-Alternative Sparse PLS methods are not able to retain the sum of beta is zero constraint.
-
-## Bibliography
-
-Lin, Wei, Pixu Shi, Rui Feng, and Hongzhe Li. 2014. “Variable Selection in Regression with Compositional Covariates.” Biometrika 101 (4). Oxford University Press: 785–97.
-
-Hinkle, John, and William Rayens. 1995. “Partial Least Squares and Compositional Data: Problems and Alternatives.” Chemometrics and Intelligent Laboratory Systems 30 (1): 159–72.
