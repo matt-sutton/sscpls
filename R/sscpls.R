@@ -37,7 +37,7 @@
 #'round(crossprod(res$x.scores), 5)
 #'
 
-sscpls <- function(X, Y, ncomp=2, lambda, scale = F, center=T, compositional=F, abstol = 1e-06, reltol= 1e-06, max_itter = 10^5) {
+sscpls <- function(X, Y, ncomp=2, lambda, scale = F, center=T, compositional=F, abstol = 1e-06, reltol= 1e-06, max_itter = 500) {
 
   #-- Internal funciton for vector normalisation --#
   normalise <- function(x, xnorm){
@@ -88,6 +88,7 @@ sscpls <- function(X, Y, ncomp=2, lambda, scale = F, center=T, compositional=F, 
   lambda_max <- max(abs(svdm$v))*d
   lambda_h <- lambda_max*lambda
   lambda <- lambda_h/d
+  convg <- list()
 
   for(h in 1:ncomp){
 
@@ -100,19 +101,21 @@ sscpls <- function(X, Y, ncomp=2, lambda, scale = F, center=T, compositional=F, 
 
       Mu <- M%*%uold
       #-- get v direction vector --#
-      admm_u <- get_u(Mu, proj, lambda_h, rho=1, abstol = abstol, reltol= reltol, max_itter= max_itter, compositional=compositional)
-      rnorm <- c(rnorm, admm_u$rnorm)
-      snorm <- c(snorm, admm_u$snorm)
+      admm_u <- get_u(Mu, proj, lambda_h, rho=max(proj%*%Mu), abstol = abstol, reltol= reltol, max_itter= max_itter, compositional=compositional)
       v <- admm_u$u
 
       #-- get u direction vector --#
       u <- normalise(Mt%*%v, norm(Mt%*%v,"e"))
 
-      if(norm(u - uold, type = "e") < 1e-10){
+      if(norm(u - uold, type = "e") < 1e-10 || norm(u) < 1e-6 ){
         break
       }
       uold <- u
     }
+    convg$rnorm[h] <- admm_u$rnorm
+    convg$snorm[h] <- admm_u$snorm
+    convg$niter[h] <- admm_u$niter
+
     U[,h] <- u
 
     #-- compute score --#
@@ -142,8 +145,7 @@ sscpls <- function(X, Y, ncomp=2, lambda, scale = F, center=T, compositional=F, 
              Beta = Beta,
              Px = proj_matrices,
              lambdas = lambdas,
-             rnorm = rnorm,
-             snorm = snorm,
+             convg = convg,
              Vorg= Vorg)
   return(res)
 }

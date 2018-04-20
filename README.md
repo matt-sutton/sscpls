@@ -21,24 +21,25 @@ The PLS direction vectors are sparse using ℓ<sub>1</sub> penalty term and must
 set.seed(1)
 library(sscpls)
 n<-50 # number of observations
-p<-50 # number of variables
+p<-100 # number of variables
 X<-matrix(rnorm(n*p),ncol=p)
 X <- scale(X)
 beta <- c(1:5, rep(0, p-5))
 y<-X%*%beta + matrix(rnorm(n))
 
-fit <- sscpls(X, y, ncomp = 4, lambda = 0.7, scale = F)
+fitcv <- cv_sscpls(X, y, K = 1:4, lambda = 1:9/10, fold = 10)
+fit <- sscpls(X, y, ncomp = 4, lambda = 0.9, scale = F)
 
 Beta_comps <- matrix(unlist(fit$Beta), ncol = 4) # Get Matrix of beta estimates at each component
 show_nonzero(cbind(Beta_comps, beta))
 ```
 
     ##                                          beta
-    ## [1,] 0.000000 0.000000 0.957490 0.957490    1
-    ## [2,] 0.000000 1.387000 1.996100 1.996100    2
-    ## [3,] 3.381773 3.381773 3.381773 3.381773    3
-    ## [4,] 1.076479 3.865946 3.865946 3.865946    4
-    ## [5,] 5.459896 4.758949 4.758949 4.758949    5
+    ## [1,] 0.000000 0.000000 0.000000 1.229254    1
+    ## [2,] 0.000000 0.000000 1.835830 1.887444    2
+    ## [3,] 1.747846 1.872779 1.872779 3.055013    3
+    ## [4,] 0.000000 4.074708 4.112529 4.112529    4
+    ## [5,] 5.480903 5.480903 5.409163 4.873663    5
 
 ``` r
 # sum(cov(X%*%fit$Uorg, y)) # objective maximised
@@ -78,7 +79,7 @@ X <- t(apply(X, 1, function(x) x/sum(x)))
 
 Z <- t(apply(X, 1, function(z) log(z/z[p])))
 
-Betastar <- matrix(c(1, -0.8, 0.6, 0, 0,-1.5,0.5, 1.2, rep(0, p - 8)))
+Betastar <- matrix(c(1:5, rep(0, p - 5)))
 Betastar[p] <- -sum(Betastar)
 error <- matrix(rnorm(n, sd = 0.5))
 
@@ -97,53 +98,51 @@ cbind(fit_B[,,4], Betastar)[1:15,] # only show some all are nonzero
 ```
 
     ##            [,1] [,2]
-    ## X1   0.54536013  1.0
-    ## X2  -0.28020479 -0.8
-    ## X3   0.42767293  0.6
-    ## X4   0.12172604  0.0
-    ## X5  -0.33034597  0.0
-    ## X6  -0.96705289 -1.5
-    ## X7   0.53214948  0.5
-    ## X8   0.87387024  1.2
-    ## X9   0.02515786  0.0
-    ## X10 -0.07873966  0.0
-    ## X11 -0.03711091  0.0
-    ## X12  0.21280074  0.0
-    ## X13 -0.28873248  0.0
-    ## X14 -0.26195036  0.0
-    ## X15 -0.20454224  0.0
+    ## X1   1.10265919    1
+    ## X2   1.00540521    2
+    ## X3   2.95145633    3
+    ## X4   2.90012744    4
+    ## X5   3.80178650    5
+    ## X6   1.79847952    0
+    ## X7   0.24279385    0
+    ## X8  -0.62521063    0
+    ## X9  -1.45060643    0
+    ## X10 -0.25444222    0
+    ## X11  0.68327214    0
+    ## X12  0.06776761    0
+    ## X13 -0.23007247    0
+    ## X14 -0.59405261    0
+    ## X15  0.22940184    0
 
 ``` r
 sum(fit_B[,,4]) # Compositional PLS satisfies sum(B) = 0 
 ```
 
-    ## [1] 2.709638e-15
+    ## [1] 3.849698e-14
 
 Now using sparsity
 
 ``` r
-fit <- sscpls(Xtilde, y, ncomp = 3, lambda = 0.85, scale = F, compositional = T)
+fit <- sscpls(Xtilde, y, ncomp = 2, lambda = 0.45, scale = F, compositional = T, max_itter = 10^4, abstol = 1e-7, reltol = 1e-7)
 
-Beta_comps <- matrix(unlist(fit$Beta), ncol = 3) # Get Matrix of beta estimates at each component
+Beta_comps <- matrix(unlist(fit$Beta), ncol = 2) # Get Matrix of beta estimates at each component
 show_nonzero(cbind(Beta_comps,Betastar))
 ```
 
-    ##            [,1]       [,2]        [,3] [,4]
-    ##  [1,]  0.000000  0.5653049  0.56530494  1.0
-    ##  [2,]  0.000000  0.0000000 -0.37275514 -0.8
-    ##  [3,]  0.000000  0.0000000  0.00000000  0.6
-    ##  [4,]  0.000000 -1.1358419 -1.14603966 -1.5
-    ##  [5,]  0.000000  0.0000000  0.04524048  0.5
-    ##  [6,]  1.034775  1.2002163  1.20021626  1.2
-    ##  [7,]  0.000000  0.0000000  0.33773541  0.0
-    ##  [8,]  0.000000  0.4051827  0.40518270  0.0
-    ##  [9,] -1.034879 -1.0348790 -1.03487895 -1.0
+    ##             [,1]        [,2] [,3]
+    ## [1,]   0.0000000   0.0000000    1
+    ## [2,]   0.0000000   3.0390226    2
+    ## [3,]   0.3300458   2.2246210    3
+    ## [4,]   3.1765315   3.1765315    4
+    ## [5,]   6.8961250   6.8961250    5
+    ## [6,]   2.9082911  -0.5731075    0
+    ## [7,] -13.3111062 -14.7632668  -15
 
 ``` r
-sum(fit$Beta[[3]]) # Compositional PLS satisfies sum(B) = 0  
+sum(fit$Beta[[2]]) # Compositional PLS satisfies sum(B) = 0  
 ```
 
-    ## [1] 6.034395e-06
+    ## [1] -7.429346e-05
 
 Alternative Sparse PLS methods are not able to retain the sum of beta is zero constraint.
 

@@ -28,7 +28,7 @@ The PLS direction vectors are sparse using $\ell_1$ penalty term and must lie in
 set.seed(1)
 library(sscpls)
 n<-50 # number of observations
-p<-50 # number of variables
+p<-100 # number of variables
 X<-matrix(rnorm(n*p),ncol=p)
 X <- scale(X)
 beta <- c(1:5, rep(0, p-5))
@@ -77,7 +77,7 @@ X <- t(apply(X, 1, function(x) x/sum(x)))
 
 Z <- t(apply(X, 1, function(z) log(z/z[p])))
 
-Betastar <- matrix(c(1, -0.8, 0.6, 0, 0,-1.5,0.5, 1.2, rep(0, p - 8)))
+Betastar <- matrix(c(1:5, rep(0, p - 5)))
 Betastar[p] <- -sum(Betastar)
 error <- matrix(rnorm(n, sd = 0.5))
 
@@ -100,12 +100,12 @@ sum(fit_B[,,4]) # Compositional PLS satisfies sum(B) = 0
 Now using sparsity
 
 ```{r}
-fit <- sscpls(Xtilde, y, ncomp = 3, lambda = 0.85, scale = F, compositional = T)
+fit <- sscpls(Xtilde, y, ncomp = 2, lambda = 0.45, scale = F, compositional = T, max_itter = 10^4, abstol = 1e-7, reltol = 1e-7)
 
-Beta_comps <- matrix(unlist(fit$Beta), ncol = 3) # Get Matrix of beta estimates at each component
+Beta_comps <- matrix(unlist(fit$Beta), ncol = 2) # Get Matrix of beta estimates at each component
 show_nonzero(cbind(Beta_comps,Betastar))
 
-sum(fit$Beta[[3]]) # Compositional PLS satisfies sum(B) = 0  
+sum(fit$Beta[[2]]) # Compositional PLS satisfies sum(B) = 0  
 ```
 
 Alternative Sparse PLS methods are not able to retain the sum of beta is zero constraint.

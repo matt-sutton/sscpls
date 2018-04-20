@@ -1,4 +1,4 @@
-cv_sscpls_par <- function (x, y, fold = 10, K, lambda, abstol = 1e-03, reltol= 1e-03, max_itter = 10^4) {
+cv_sscpls_par <- function (x, y, fold = 10, K, lambda, abstol = 1e-03, reltol= 1e-03, max_itter = 500) {
 
   #-- Initalise --#
   x <- as.matrix(x)
@@ -53,7 +53,7 @@ cv_sscpls_par <- function (x, y, fold = 10, K, lambda, abstol = 1e-03, reltol= 1
   invisible(cv)
 }
 
-cv_sscpls <- function (x, y, fold = 10, K, lambda, abstol = 1e-03, reltol= 1e-03, max_itter = 10^4) {
+cv_sscpls <- function (x, y, fold = 10, K, lambda, abstol = 1e-03, reltol= 1e-03, max_itter = 100) {
 
   #-- Initalise --#
   x <- as.matrix(x)

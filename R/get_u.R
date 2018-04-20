@@ -35,23 +35,22 @@ get_u <- function(ell, proj, lambda, rho=1, abstol = 1e-04, reltol= 1e-02, max_i
 
   p <- length(ell)
 
-  xi <- rep(0,p)
-  zold <- z <- rep(0, p)
-
-  ell <- ell/rho; lambda <- lambda/rho
+  z <- xi <- rep(0,p)
 
   for( iter in 1:max_itter ){
 
-    u <- prox_l2(prox_soft(z - xi + ell, lambda))
+    zold <- z
 
-    z <- proj_S(xi + u, proj = proj)
+    x <- proj_S(z - xi + ell/rho, proj = proj)
 
-    xi <- xi + u - z
+    z <- prox_l2(prox_soft(x + xi, lambda/rho))
+
+    xi <- xi + x - z
 
     #-- terminal checks (taken from Boyd matlab example)--#
-    history_r_norm <- crossprod(u - z)^0.5;
-    history_eps_pri <- sqrt(p)*abstol + reltol*max(norm(u), norm(-z))
-    history_s_norm <- crossprod(rho*(round(z, 8) - round(zold, 8)))^0.5;
+    history_r_norm <- norm(x - z,"f");
+    history_eps_pri <- sqrt(p)*abstol + reltol*max(norm(x), norm(-z))
+    history_s_norm <- norm(rho*(z - zold));
     history_eps_dual <- sqrt(p)*abstol + reltol*norm(xi)
     zold <- z
 
@@ -59,10 +58,19 @@ get_u <- function(ell, proj, lambda, rho=1, abstol = 1e-04, reltol= 1e-02, max_i
        history_s_norm < history_eps_dual){
       break
     }
+
+    # Update penalty (Boyd 2010)
+    if(history_r_norm > 10*history_s_norm){
+      rho <- rho * 2
+      xi <- xi/2
+    }
+    if(history_s_norm > 10*history_r_norm){
+      rho <- rho / 2
+      xi <- xi*2
+    }
   }
-  #cat(iter, history_r_norm < history_eps_pri, history_s_norm < history_eps_dual)
-  #cat("\n\n",u,"\n",z,"\n")
-  res <- list(u = u, rnorm = history_r_norm, snorm = history_s_norm)
+
+  res <- list(u = z, rnorm = history_r_norm, snorm = history_s_norm, niter = iter)
   return( res )
 }
 
