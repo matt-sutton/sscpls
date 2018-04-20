@@ -92,17 +92,19 @@ sscpls <- function(X, Y, ncomp=2, lambda, scale = F, center=T, compositional=F, 
 
   for(h in 1:ncomp){
 
-    #-- find lambda --#
-    lambda_max <- max(abs(proj%*%M%*%uold))
-    lambda_h <- lambda_max*lambda
-    lambdas <- c(lambdas, lambda_h)
+    #-- find lambda (Witten style Tuning) --#
+    d <- svd(proj%*%M)$d[1]
+    lambda_h <- d * lambda
 
     for (i in 1:500){
 
       Mu <- M%*%uold
+
       #-- get v direction vector --#
-      admm_u <- get_u(Mu, proj, lambda_h, rho=max(proj%*%Mu), abstol = abstol, reltol= reltol, max_itter= max_itter, compositional=compositional)
-      v <- admm_u$u
+      admm_v <- get_v(Mu, proj, lambda_h, rho=max(proj%*%Mu),
+                      abstol = abstol, reltol= reltol,
+                      max_itter= max_itter, compositional=compositional)
+      v <- admm_v$v
 
       #-- get u direction vector --#
       u <- normalise(Mt%*%v, norm(Mt%*%v,"e"))
@@ -112,9 +114,9 @@ sscpls <- function(X, Y, ncomp=2, lambda, scale = F, center=T, compositional=F, 
       }
       uold <- u
     }
-    convg$rnorm[h] <- admm_u$rnorm
-    convg$snorm[h] <- admm_u$snorm
-    convg$niter[h] <- admm_u$niter
+    convg$rnorm[h] <- admm_v$rnorm
+    convg$snorm[h] <- admm_v$snorm
+    convg$niter[h] <- admm_v$niter
 
     U[,h] <- u
 
@@ -145,8 +147,7 @@ sscpls <- function(X, Y, ncomp=2, lambda, scale = F, center=T, compositional=F, 
              Beta = Beta,
              Px = proj_matrices,
              lambdas = lambdas,
-             convg = convg,
-             Vorg= Vorg)
+             convg = convg)
   return(res)
 }
 

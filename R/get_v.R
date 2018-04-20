@@ -1,6 +1,6 @@
 
 #-- ADMM implementation of get_v --#
-get_u <- function(ell, proj, lambda, rho=1, abstol = 1e-04, reltol= 1e-02, max_itter = 10^3, xi_init=NULL, compositional) {
+get_v <- function(ell, proj, lambda, rho=1, abstol = 1e-04, reltol= 1e-02, max_itter = 10^3, xi_init=NULL, compositional) {
 
   #-- Some simple internal funcitons --#
   prox_soft <- function(x, lambda){
@@ -70,7 +70,7 @@ get_u <- function(ell, proj, lambda, rho=1, abstol = 1e-04, reltol= 1e-02, max_i
     }
   }
 
-  res <- list(u = z, rnorm = history_r_norm, snorm = history_s_norm, niter = iter)
+  res <- list(v = z, rnorm = history_r_norm, snorm = history_s_norm, niter = iter)
   return( res )
 }
 

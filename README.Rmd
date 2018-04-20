@@ -17,7 +17,7 @@ Use devtools to install:
 
 ```{r}
 #library(devtools)
-#install_github("sscpls", "matt-sutton")
+#install_github("matt-sutton/sgspls")
 ```
 
 #### Example 1 (Orthogonal components)
@@ -25,7 +25,7 @@ Use devtools to install:
 The PLS direction vectors are sparse using $\ell_1$ penalty term and must lie in a subspace which ensurse orthogonality of components. See below for an example.
 
 ```{r}
-set.seed(0)
+set.seed(1)
 library(sscpls)
 n<-50 # number of observations
 p<-100 # number of variables
@@ -35,7 +35,7 @@ beta <- c(1:5, rep(0, p-5))
 y<-X%*%beta + matrix(rnorm(n))
 
 fitcv <- cv_sscpls(X, y, K = 1:4, lambda = 1:9/10, fold = 10)
-fit <- sscpls(X, y, ncomp = fitcv$K, lambda = fitcv$lambda.1se, scale = F)
+fit <- sscpls(X, y, ncomp = 4, lambda = 0.9, scale = F)
 
 Beta_comps <- matrix(unlist(fit$Beta), ncol = 4) # Get Matrix of beta estimates at each component
 show_nonzero(cbind(Beta_comps, beta))
@@ -45,7 +45,7 @@ The objective and orthogonality constraints:
 ```{r}
 M <- crossprod(X, y)
 # objective maximised
-diag(crossprod(t(M)%*%fit$V)) 
+diag(crossprod(t(M)%*%fit$x.weights)) 
 # constraint satisfied
 round(crossprod(fit$x.scores),digits = 4)  
 ```
