@@ -68,7 +68,7 @@ sscpls <- function(X, Y, ncomp=2, lambda, scale = F, center=T, compositional=F, 
   Y <- scale(Y,center = center, scale = scale)
 
   #-- Initialisation --#
-  Vorg <- V <- matrix(0, p, ncomp);  U <- matrix(0, q, ncomp)
+  V <- Vscaled <- matrix(0, p, ncomp);  U <- matrix(0, q, ncomp)
   Z <- matrix(0, n, ncomp);  Z_center <- rep(0, ncomp); Z_scale <- rep(1, ncomp)
 
   lambdas <- rnorm <- snorm <- NULL
@@ -92,9 +92,9 @@ sscpls <- function(X, Y, ncomp=2, lambda, scale = F, center=T, compositional=F, 
 
   for(h in 1:ncomp){
 
-    #-- find lambda (Witten style Tuning) --#
-    d <- svd(proj%*%M)$d[1]
-    lambda_h <- d * lambda
+    #-- find lambda --#
+    lambda_max <- max(abs(proj%*%M%*%uold))
+    lambda_h <- lambda_max*lambda
     lambdas <- c(lambdas, lambda_h)
 
     for (i in 1:500){
@@ -126,7 +126,7 @@ sscpls <- function(X, Y, ncomp=2, lambda, scale = F, center=T, compositional=F, 
     z <- z - z_c;
     z_s <- drop(sqrt(crossprod(z)))
     Z[,h] <- z <- normalise(z, z_s)
-    V[,h] <- v <- normalise(v, z_s)
+    Vscaled[,h] <- v <- normalise(v, z_s)
 
     #-- construct the unwanted space --#
     cx <- t(X)%*%Z[,1:h, drop = F]
@@ -137,11 +137,11 @@ sscpls <- function(X, Y, ncomp=2, lambda, scale = F, center=T, compositional=F, 
 
   }
 
-  Beta <- sapply(1:ncomp, function(h) tcrossprod(V[,1:h, drop = F])%*%M, simplify = F)
+  Beta <- sapply(1:ncomp, function(h) tcrossprod(Vscaled[,1:h, drop = F])%*%M, simplify = F)
 
   res = list(x.scores = Z,
-             x.weights = round(V,9),
-             y.weights = round(U,9),
+             x.weights = Vscaled,
+             y.weights = U,
              Beta = Beta,
              Px = proj_matrices,
              lambdas = lambdas,
