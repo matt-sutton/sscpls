@@ -1,4 +1,4 @@
-cv_sscpls_par <- function (x, y, fold = 10, K, lambda, abstol = 1e-03, reltol= 1e-03, max_itter = 500) {
+cv_sscpls_par <- function (x, y, fold = 10, K, lambda, abstol = 1e-03, reltol= 1e-03, max_itter = 500, compositional = FALSE, foldi =NULL) {
 
   #-- Initalise --#
   x <- as.matrix(x)
@@ -7,17 +7,19 @@ cv_sscpls_par <- function (x, y, fold = 10, K, lambda, abstol = 1e-03, reltol= 1
   ip <- c(1:p)
   y <- as.matrix(y)
   q <- ncol(y)
-  foldi <- split(sample(1:n), rep(1:fold, length = n))
+  if(is.null(foldi)){
+    foldi <- split(sample(1:n), rep(1:fold, length = n))
+  }
   sdmat <- mspemat <- matrix(0, length(lambda), length(K))
 
   #-- loop the lambda --#
   for (i in 1:length(lambda)) {
 
     #-- parallel compute of cross validation --#
-    mspemati <- foreach(j = 1:fold, .export = c("sscpls", "get_u"), .combine = rbind) %dopar% {
+    mspemati <- foreach(j = 1:fold, .packages = c("sscpls"), .combine = rbind) %dopar% {
       omit <- foldi[[j]]
       mspes <- rep(0, length(K))
-      object <- sscpls(x[-omit, , drop = FALSE], y[-omit, , drop = FALSE], ncomp = max(K),
+      object <- sscpls(x[-omit, , drop = FALSE], y[-omit, , drop = FALSE], ncomp = max(K),compositional = compositional,
                        lambda = lambda[i], scale = F, abstol = abstol, reltol= reltol, max_itter = max_itter)
 
       mux <- colMeans(x[-omit, , drop = FALSE])
@@ -53,7 +55,7 @@ cv_sscpls_par <- function (x, y, fold = 10, K, lambda, abstol = 1e-03, reltol= 1
   invisible(cv)
 }
 
-cv_sscpls <- function (x, y, fold = 10, K, lambda, abstol = 1e-03, reltol= 1e-03, max_itter = 100) {
+cv_sscpls <- function (x, y, fold = 10, K, lambda, abstol = 1e-03, reltol= 1e-03, max_itter = 100, compositional = FALSE, foldi=NULL) {
 
   #-- Initalise --#
   x <- as.matrix(x)
@@ -62,7 +64,9 @@ cv_sscpls <- function (x, y, fold = 10, K, lambda, abstol = 1e-03, reltol= 1e-03
   ip <- c(1:p)
   y <- as.matrix(y)
   q <- ncol(y)
-  foldi <- split(sample(1:n), rep(1:fold, length = n))
+  if(is.null(foldi)){
+    foldi <- split(sample(1:n), rep(1:fold, length = n))
+  }
   sdmat <- mspemat <- matrix(0, length(lambda), length(K))
 
   #-- loop the lambda --#
@@ -70,7 +74,7 @@ cv_sscpls <- function (x, y, fold = 10, K, lambda, abstol = 1e-03, reltol= 1e-03
     mspemati <- matrix(0, fold, length(K))
     for (j in 1:fold) {
       omit <- foldi[[j]]
-      object <- sscpls(x[-omit, , drop = FALSE], y[-omit, , drop = FALSE], ncomp = max(K),
+      object <- sscpls(x[-omit, , drop = FALSE], y[-omit, , drop = FALSE], ncomp = max(K), compositional = compositional,
                        lambda = lambda[i], scale = F, abstol = abstol, reltol= reltol, max_itter = max_itter)
       mux <- colMeans(x[-omit, , drop = FALSE])
       newx <- x[omit, , drop = FALSE]

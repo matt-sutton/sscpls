@@ -37,7 +37,28 @@
 #'round(crossprod(res$x.scores), 5)
 #'
 
-sscpls <- function(X, Y, ncomp=2, lambda, scale = F, center=T, compositional=F, abstol = 1e-06, reltol= 1e-06, max_itter = 500) {
+sscpls2 <- function(X, Y, ncomp=2, lambda, scale = F, center=T, compositional=F, abstol = 1e-06, reltol= 1e-06, max_itter = 500) {
+
+  #-- Internal funciton for vector normalisation --#
+  normalise <- function(x, xnorm){
+    xnorm <- drop(xnorm + 1*(xnorm == 0))
+    return(x/(xnorm))
+  }
+
+  #-- Internal funciton to get projection given basis X --#
+  get_proj <- function(X){
+    X <- as.matrix(X)
+    if(all(X == 0)) return(tcrossprod(X))
+
+    L <- t(suppressWarnings(chol(crossprod(X), pivot = TRUE)))
+    r <- attr(L, "rank")
+    piv <- attr(L, "pivot")
+    Qt <- forwardsolve(L, t(X[, piv]), r)
+
+    ## P = QQ'
+    H <- crossprod(Qt)
+    return(H)
+  }
 
   #-- Data parameters --#
   n <- nrow(X);  p <- ncol(X);   q <- ncol(Y)
@@ -63,31 +84,33 @@ sscpls <- function(X, Y, ncomp=2, lambda, scale = F, center=T, compositional=F, 
   uold <- svdm$u;
   convg <- list()
 
-  # if(compositional){
-  #   lambda_max <- tail(sort(abs(M%*%uold)),2)[1]/svd(M,nu = 1,nv = 1)$d[1]#max(abs(proj_compositional(M%*%uold,proj)))/svd(M,nu = 1,nv = 1)$d[1]
-  # } else{
-  #   lambda_max <- max(abs(M%*%uold))/svd(M,nu = 1,nv = 1)$d[1]
-  # }
-  # lambda <- lambda_max*lambda
-
   for(h in 1:ncomp){
 
-    # lambda_max <- max(abs(proj%*%M%*%uold))
-    # lambda_h <- lambda_max*lambda
+    #-- find lambda (Witten style Tuning) --#
+    lambda_max <- max(abs(proj%*%M%*%uold))
+    lambda_h <- lambda_max*lambda
 
-    if(compositional){
-      lambda_h <- lambda*tail(sort(abs(proj%*%M)),2)[1]
-    } else{
-      lambda_h <- lambda*max(abs(proj%*%M))
+    for (i in 1:500){
+
+      Mu <- M%*%uold
+
+      #-- get v direction vector --#
+      admm_v <- get_v(Mu, proj, lambda_h, rho=max(abs(proj%*%Mu)),
+                      abstol = abstol, reltol= reltol,
+                      max_itter= max_itter, compositional=compositional)
+      v <- admm_v$v
+
+      #-- get u direction vector --#
+      u <- normalise(Mt%*%v, norm(Mt%*%v,"e"))
+
+      if(norm(u - uold, type = "e") < 1e-10 || norm(u) < 1e-6 ){
+        break
+      }
+      uold <- u
     }
-
-    uv <- get_uv(M, uold, lambda_h, proj, abstol = abstol, reltol= reltol,
-                 max_itter= max_itter, compositional=compositional)
-
-    u <- uv$u; v <- uv$v
-    convg$rnorm[h] <- uv$rnorm
-    convg$snorm[h] <- uv$snorm
-    convg$niter[h] <- uv$niter
+    convg$rnorm[h] <- admm_v$rnorm
+    convg$snorm[h] <- admm_v$snorm
+    convg$niter[h] <- admm_v$niter
     convg$lambda[h] <- lambda_h
 
     U[,h] <- u
@@ -108,8 +131,6 @@ sscpls <- function(X, Y, ncomp=2, lambda, scale = F, center=T, compositional=F, 
     #-- construct wanted space --#
     proj <- diag(1,p,p) - get_proj(cx)
     proj_matrices[,,h+1] <- proj
-
-    #-- Check convergence and stop criterion --#
 
   }
 

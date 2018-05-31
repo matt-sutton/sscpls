@@ -7,7 +7,7 @@ library(dplyr)
 
 ## --Input: A list of factors for sim study --#
 simlist <- list(n =   c(40),
-                p =   c(20, 40, 80, 100,200),
+                p =   c(1000, 5000),
                 gamma = c(0.4),
                 q = c(20),
                 m=c(6))
@@ -41,6 +41,10 @@ ntest <- 10^3
 lambda_cv <- seq(0.1, 0.9, by = 0.1)
 
 res <- vector("list", nsim)
+
+library(doSNOW)
+cl <- makeCluster(4)
+registerDoSNOW(cl)
 
 for(i in 1:nsim){
 
@@ -150,3 +154,4 @@ for(i in 1:nsim){
 
   save(res, file = "results/data_summary.rda")
 }
+stopCluster(cl)

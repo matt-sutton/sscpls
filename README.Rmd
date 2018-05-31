@@ -28,7 +28,7 @@ The PLS direction vectors are sparse using $\ell_1$ penalty term and must lie in
 set.seed(1)
 library(sscpls)
 n<-50 # number of observations
-p<-100 # number of variables
+p<-10 # number of variables
 X<-matrix(rnorm(n*p),ncol=p)
 X <- scale(X)
 beta <- c(1:5, rep(0, p-5))

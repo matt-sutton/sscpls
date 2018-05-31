@@ -2,40 +2,18 @@
 #-- ADMM implementation of get_v --#
 get_v <- function(ell, proj, lambda, rho=1, abstol = 1e-04, reltol= 1e-02, max_itter = 10^3, xi_init=NULL, compositional) {
 
-  #-- Some simple internal funcitons --#
-  prox_soft <- function(x, lambda){
-    return(sign(x)*pmax(0, abs(x) - lambda))
-  }
-
-  prox_l2 <- function(u){
-    nrm <- drop(sqrt(crossprod(u)))
-    if(nrm  < 1 ){
-      return(u)
-    }  else {
-      return(u/nrm)
-    }
-  }
-
   #-- Projection operator --#
   if(compositional){
-    proj_S <- function(u, proj){
-      if(all(u == 0)) {return(u)}
-      simplex_root<- function(eta, v){
-        res <- proj%*%(v - eta) +10e-10
-        return(sum(res))
-      }
-      eta <- uniroot(simplex_root, interval = c(-max(abs(u)), max(abs(u))), v=u)$root
-      return(proj%*%(u - eta))
-    }
+    proj_S <- proj_compositional
   } else {
-    proj_S <- function(u, proj){
-      return(proj%*%u)
-    }
+    proj_S <- proj_orthogonal
   }
 
   p <- length(ell)
 
   z <- xi <- rep(0,p)
+
+  xi <- proj%*%ell/rho
 
   for( iter in 1:max_itter ){
 
