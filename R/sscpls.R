@@ -55,42 +55,37 @@ sscpls <- function(X, Y, ncomp=2, lambda, scale = F, center=T, compositional=F, 
   proj_matrices[,,1] <- proj <- diag(1, p,p)
 
   #-- Compute the svd of M --#
-  M <- crossprod(X, Y)/n
+  M <- crossprod(X, Y)/(n)
   Mt <- t(M)
   svdm <- svd(Mt, nu = 1, nv = 1)
 
   #-- initalise c = Mu and lambda --#
   uold <- svdm$u;
+  vold <- svdm$v;
   convg <- list()
-
-  # if(compositional){
-  #   lambda_max <- tail(sort(abs(M%*%uold)),2)[1]/svd(M,nu = 1,nv = 1)$d[1]#max(abs(proj_compositional(M%*%uold,proj)))/svd(M,nu = 1,nv = 1)$d[1]
-  # } else{
-  #   lambda_max <- max(abs(M%*%uold))/svd(M,nu = 1,nv = 1)$d[1]
-  # }
-  # lambda <- lambda_max*lambda
 
   for(h in 1:ncomp){
 
-    # lambda_max <- max(abs(proj%*%M%*%uold))
-    # lambda_h <- lambda_max*lambda
+    for(iter in 1:100){
 
-    if(compositional){
-      lambda_h <- lambda*tail(sort(abs(proj%*%M)),2)[1]
-    } else{
-      lambda_h <- lambda*max(abs(proj%*%M))
+      lambda_h <- lambda*max(abs(proj%*%M%*%uold))
+
+      uv <- get_uv(M, uold, vold, lambda_h, proj, abstol = abstol, reltol= reltol,
+                   max_itter= max_itter, compositional=compositional)
+
+      u <- uv$u; v <- uv$v
+
+      if(norm(uold - u,"e") || norm(u) < 1e-6 || q == 1) {
+        break
+      }
     }
-
-    uv <- get_uv(M, uold, lambda_h, proj, abstol = abstol, reltol= reltol,
-                 max_itter= max_itter, compositional=compositional)
-
-    u <- uv$u; v <- uv$v
     convg$rnorm[h] <- uv$rnorm
     convg$snorm[h] <- uv$snorm
     convg$niter[h] <- uv$niter
     convg$lambda[h] <- lambda_h
 
     U[,h] <- u
+    V[,h] <- v
 
     #-- compute score --#
     z <- X%*%v
@@ -109,8 +104,6 @@ sscpls <- function(X, Y, ncomp=2, lambda, scale = F, center=T, compositional=F, 
     proj <- diag(1,p,p) - get_proj(cx)
     proj_matrices[,,h+1] <- proj
 
-    #-- Check convergence and stop criterion --#
-
   }
 
   Beta <- sapply(1:ncomp, function(h) tcrossprod(Vscaled[,1:h, drop = F])%*%M*n, simplify = F)
@@ -120,7 +113,8 @@ sscpls <- function(X, Y, ncomp=2, lambda, scale = F, center=T, compositional=F, 
              y.weights = U,
              Beta = Beta,
              Px = proj_matrices,
-             convg = convg)
+             convg = convg,
+             V = V)
   return(res)
 }
 

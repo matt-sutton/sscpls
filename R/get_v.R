@@ -1,3 +1,17 @@
+get_uv <- function(M, uold, vold, lambda, proj, abstol = abstol, reltol= reltol,
+                   max_itter= max_itter, compositional=compositional){
+
+  Mu <- M%*%uold
+
+  #-- get v direction vector --#
+  res <- get_v(Mu, proj, lambda, rho=max(abs(proj%*%Mu)),
+                  abstol = abstol, reltol= reltol,max_itter= max_itter, compositional=compositional)
+  #-- get u direction vector --#
+  res$u <- normalise(t(M)%*%res$v, norm(t(M)%*%res$v,"e"))
+
+  return(res)
+}
+
 
 #-- ADMM implementation of get_v --#
 get_v <- function(ell, proj, lambda, rho=1, abstol = 1e-04, reltol= 1e-02, max_itter = 10^3, xi_init=NULL, compositional) {
