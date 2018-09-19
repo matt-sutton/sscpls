@@ -43,8 +43,18 @@ sscpls <- function(X, Y, ncomp=2, lambda, scale = F, center=T, compositional=F, 
   n <- nrow(X);  p <- ncol(X);   q <- ncol(Y)
 
   #-- Scaling --#
-  X <- scale(X,center = center, scale = scale)
-  Y <- scale(Y,center = center, scale = scale)
+  ymeans <- colMeans(Y)
+  xmeans <- colMeans(X)
+  x_scale <- rep(1, ncol(X))
+  y_scale <- rep(1, ncol(Y))
+  if(scale){
+    x_scale <- apply(X, 2, sd)
+    X <- scale(X, F, scale = x_scale)
+    y_scale <- apply(Y, 2, sd)
+    Y <- scale(Y, F, scale = y_scale)
+  }
+  X <- scale(X,center = T, scale = scale)
+  Y <- scale(Y,center = T, scale = scale)
 
   #-- Initialisation --#
   V <- Vscaled <- matrix(0, p, ncomp);  U <- matrix(0, q, ncomp)
@@ -107,6 +117,8 @@ sscpls <- function(X, Y, ncomp=2, lambda, scale = F, center=T, compositional=F, 
   }
 
   Beta <- sapply(1:ncomp, function(h) tcrossprod(Vscaled[,1:h, drop = F])%*%M*n, simplify = F)
+  B0 <- sapply(1:ncomp, function(h) ymeans - xmeans%*%Beta[[h]])
+  Beta <- sapply(Beta, function(b) as.matrix(Matrix::Matrix(t(scale(t(unlist(b)), scale = x_scale/y_scale, center = F)))), simplify = F)
 
   res = list(x.scores = Z,
              x.weights = Vscaled,
@@ -114,6 +126,8 @@ sscpls <- function(X, Y, ncomp=2, lambda, scale = F, center=T, compositional=F, 
              Beta = Beta,
              Px = proj_matrices,
              convg = convg,
+             xmeans = xmeans,
+             x_scale = x_scale,
              V = V)
   return(res)
 }

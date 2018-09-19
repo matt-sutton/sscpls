@@ -1,4 +1,4 @@
-cv_sscpls_par <- function (x, y, fold = 10, K, lambda, abstol = 1e-03, reltol= 1e-03, max_itter = 500, compositional = FALSE, foldi =NULL) {
+cv_sscpls_par <- function (x, y, fold = 10, K, lambda, abstol = 1e-03, reltol= 1e-03, max_itter = 500, compositional = FALSE, foldi =NULL, scale = F) {
 
   #-- Initalise --#
   x <- as.matrix(x)
@@ -20,11 +20,10 @@ cv_sscpls_par <- function (x, y, fold = 10, K, lambda, abstol = 1e-03, reltol= 1
       omit <- foldi[[j]]
       mspes <- rep(0, length(K))
       object <- sscpls(x[-omit, , drop = FALSE], y[-omit, , drop = FALSE], ncomp = max(K),compositional = compositional,
-                       lambda = lambda[i], scale = F, abstol = abstol, reltol= reltol, max_itter = max_itter)
+                       lambda = lambda[i], scale = scale, abstol = abstol, reltol= reltol, max_itter = max_itter)
 
-      mux <- colMeans(x[-omit, , drop = FALSE])
       newx <- x[omit, , drop = FALSE]
-      newx <- scale(newx, mux, scale = F)
+      newx <- scale(newx, object$xmeans, scale = object$x_scale)
       betamat <- object$Beta
 
       for (k in K) {
@@ -55,7 +54,7 @@ cv_sscpls_par <- function (x, y, fold = 10, K, lambda, abstol = 1e-03, reltol= 1
   invisible(cv)
 }
 
-cv_sscpls <- function (x, y, fold = 10, K, lambda, abstol = 1e-03, reltol= 1e-03, max_itter = 100, compositional = FALSE, foldi=NULL) {
+cv_sscpls <- function (x, y, fold = 10, K, lambda, abstol = 1e-03, reltol= 1e-03, max_itter = 100, compositional = FALSE, foldi=NULL, scale = F) {
 
   #-- Initalise --#
   x <- as.matrix(x)
@@ -76,9 +75,8 @@ cv_sscpls <- function (x, y, fold = 10, K, lambda, abstol = 1e-03, reltol= 1e-03
       omit <- foldi[[j]]
       object <- sscpls(x[-omit, , drop = FALSE], y[-omit, , drop = FALSE], ncomp = max(K), compositional = compositional,
                        lambda = lambda[i], scale = F, abstol = abstol, reltol= reltol, max_itter = max_itter)
-      mux <- colMeans(x[-omit, , drop = FALSE])
       newx <- x[omit, , drop = FALSE]
-      newx <- scale(newx, mux, scale = F)
+      newx <- scale(newx, object$xmeans, scale = object$x_scale)
       betamat <- object$Beta
 
       for (k in K) {
