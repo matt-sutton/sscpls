@@ -1,11 +1,22 @@
-get_uv <- function(M, uold, vold, lambda, proj, abstol = abstol, reltol= reltol,
-                   max_itter= max_itter, compositional=compositional){
+get_uv <- function(XZ, M, uold, vold, lambda, proj, abstol = abstol, reltol= reltol,
+                   max_itter= max_itter, compositional=compositional, keepX){
 
   Mu <- M%*%uold
+  if(!keepX) lambda <- lambda*max(abs(proj%*%Mu))
 
   #-- get v direction vector --#
   res <- get_v(Mu, proj, lambda, rho=max(abs(proj%*%Mu)),
-                  abstol = abstol, reltol= reltol,max_itter= max_itter, compositional=compositional)
+                  abstol = abstol, reltol= reltol,max_itter= max_itter, compositional=compositional, keepX = keepX)
+
+  ## Continuity correction of Moghaddam
+  inds <- which(abs(res$v)>0)
+  if(length(inds) > 0){
+    proj <- diag(1,length(inds),length(inds)) - get_proj(XZ[inds,, drop = F])$H
+    pM <- proj%*%M[inds,]
+    #cbind(pM%*%uold/drop(sqrt(crossprod(pM%*%uold))),show_nonzero(res$v))
+    res$v[inds] <- normalise(pM%*%uold, norm(pM%*%uold,"e"))
+  }
+
   #-- get u direction vector --#
   res$u <- normalise(t(M)%*%res$v, norm(t(M)%*%res$v,"e"))
 
@@ -14,7 +25,7 @@ get_uv <- function(M, uold, vold, lambda, proj, abstol = abstol, reltol= reltol,
 
 
 #-- ADMM implementation of get_v --#
-get_v <- function(ell, proj, lambda, rho=1, abstol = 1e-04, reltol= 1e-02, max_itter = 10^3, xi_init=NULL, compositional) {
+get_v <- function(ell, proj, lambda, rho=1, abstol = 1e-04, reltol= 1e-02, max_itter = 10^3, xi_init=NULL, compositional, keepX) {
 
   #-- Projection operator --#
   if(compositional){
@@ -28,6 +39,7 @@ get_v <- function(ell, proj, lambda, rho=1, abstol = 1e-04, reltol= 1e-02, max_i
   z <- xi <- rep(0,p)
 
   xi <- proj%*%ell/rho
+  l <- lambda
 
   for( iter in 1:max_itter ){
 
@@ -35,7 +47,8 @@ get_v <- function(ell, proj, lambda, rho=1, abstol = 1e-04, reltol= 1e-02, max_i
 
     x <- proj_S(z - xi + ell/rho, proj = proj)
 
-    z <- prox_l2(prox_soft(x + xi, lambda/rho))
+    if(keepX) l <- sort(abs(x+xi)*rho, decreasing = T)[lambda+1]
+    z <- prox_l2(prox_soft(x + xi, l/rho))
 
     xi <- xi + x - z
 

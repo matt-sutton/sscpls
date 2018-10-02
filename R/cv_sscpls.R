@@ -23,11 +23,11 @@ cv_sscpls_par <- function (x, y, fold = 10, K, lambda, abstol = 1e-03, reltol= 1
                        lambda = lambda[i], scale = scale, abstol = abstol, reltol= reltol, max_itter = max_itter)
 
       newx <- x[omit, , drop = FALSE]
-      newx <- scale(newx, object$xmeans, scale = object$x_scale)
+      #newx <- scale(newx, object$xmeans, scale = object$x_scale)
       betamat <- object$Beta
 
       for (k in K) {
-        pred <- pred <- newx %*% betamat[[k]] + matrix(1, nrow = nrow(newx), 1) %*% colMeans(y[-omit,,drop=F])
+        pred <- pred <- newx %*% betamat[[k]]# + matrix(1, nrow = nrow(newx), 1) %*% colMeans(y[-omit,,drop=F])
         mspes[ k - min(K) + 1 ] <- mean(apply((y[omit,] - pred)^2, 2, mean))
       }
       mspes
@@ -80,7 +80,7 @@ cv_sscpls <- function (x, y, fold = 10, K, lambda, abstol = 1e-03, reltol= 1e-03
       betamat <- object$Beta
 
       for (k in K) {
-        pred <- pred <- newx %*% betamat[[k]] + matrix(1, nrow = nrow(newx), 1) %*% colMeans(y[-omit,,drop=F])
+        pred <- newx %*% betamat[[k]] + matrix(1, nrow = nrow(newx), 1) %*% object$mu
         mspemati[j, (k - min(K) + 1)] <- mean(apply((y[omit,] - pred)^2, 2, mean))
       }
     }
@@ -102,6 +102,6 @@ cv_sscpls <- function (x, y, fold = 10, K, lambda, abstol = 1e-03, reltol= 1e-03
   rownames(mspemat) <- paste("lambda=", lambda)
   colnames(mspemat) <- paste("K =", K)
   cv <- list(mspemat = mspemat, sdmat = sdmat,
-             lambda.opt = lambda.opt, lambda.adj = lambda.adj, lambda.1se = lambda.1se,K = K.opt)
+             lambda.opt = lambda.opt, lambda.adj = lambda.adj, lambda.1se = lambda.1se,K = K.opt, foldi=foldi)
   invisible(cv)
 }

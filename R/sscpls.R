@@ -37,9 +37,10 @@
 #'round(crossprod(res$x.scores), 5)
 #'
 
-sscpls <- function(X, Y, ncomp=2, lambda, scale = F, center=T, compositional=F, abstol = 1e-06, reltol= 1e-06, max_itter = 500) {
+sscpls <- function(X, Y, ncomp=2, lambda, scale = F, center=T, compositional=F, abstol = 1e-06, reltol= 1e-06, max_itter = 500, keepX = F) {
 
   #-- Data parameters --#
+  Y <- as.matrix(Y)
   n <- nrow(X);  p <- ncol(X);   q <- ncol(Y)
 
   #-- Scaling --#
@@ -78,10 +79,8 @@ sscpls <- function(X, Y, ncomp=2, lambda, scale = F, center=T, compositional=F, 
 
     for(iter in 1:100){
 
-      lambda_h <- lambda*max(abs(proj%*%M%*%uold))
-
-      uv <- get_uv(M, uold, vold, lambda_h, proj, abstol = abstol, reltol= reltol,
-                   max_itter= max_itter, compositional=compositional)
+      uv <- get_uv(t(X)%*%Z, M, uold, vold, lambda, proj, abstol = abstol, reltol= reltol,
+                   max_itter= max_itter, compositional=compositional, keepX = keepX)
 
       u <- uv$u; v <- uv$v
 
@@ -92,7 +91,6 @@ sscpls <- function(X, Y, ncomp=2, lambda, scale = F, center=T, compositional=F, 
     convg$rnorm[h] <- uv$rnorm
     convg$snorm[h] <- uv$snorm
     convg$niter[h] <- uv$niter
-    convg$lambda[h] <- lambda_h
 
     U[,h] <- u
     V[,h] <- v
@@ -111,14 +109,24 @@ sscpls <- function(X, Y, ncomp=2, lambda, scale = F, center=T, compositional=F, 
     cx <- t(X)%*%Z[,1:h, drop = F]
 
     #-- construct wanted space --#
-    proj <- diag(1,p,p) - get_proj(cx)
-    proj_matrices[,,h+1] <- proj
-
+    if(h < ncomp){
+      proj <- diag(1,p,p) - get_proj(cx)$H
+      proj_matrices[,,h+1] <- proj
+    }
   }
 
-  Beta <- sapply(1:ncomp, function(h) tcrossprod(Vscaled[,1:h, drop = F])%*%M*n, simplify = F)
+  Beta <- list()
+  for( h in 1:ncomp ){
+    B <- tcrossprod(Vscaled[,1:h, drop = F])%*%M*n
+    B <- apply( B, 2, function(b) scale(t(b),scale = x_scale, center = F) )
+    B <- scale(B, scale = 1/y_scale, center = F)
+    attr(B, "scaled:scale") <- NULL
+    Beta[[h]] <- B
+  }
+
+  # Beta <- sapply(1:ncomp, function(h) tcrossprod(Vscaled[,1:h, drop = F])%*%M*n, simplify = F)
   B0 <- sapply(1:ncomp, function(h) ymeans - xmeans%*%Beta[[h]])
-  Beta <- sapply(Beta, function(b) as.matrix(Matrix::Matrix(t(scale(t(unlist(b)), scale = x_scale/y_scale, center = F)))), simplify = F)
+  # Beta <- sapply(Beta, function(b) as.matrix(Matrix::Matrix(t(scale(t(unlist(b)), scale = x_scale/y_scale, center = F)))), simplify = F)
 
   res = list(x.scores = Z,
              x.weights = Vscaled,
@@ -128,7 +136,10 @@ sscpls <- function(X, Y, ncomp=2, lambda, scale = F, center=T, compositional=F, 
              convg = convg,
              xmeans = xmeans,
              x_scale = x_scale,
-             V = V)
+             mu = ymeans,
+             V = V,
+             X=X,
+             Y=Y)
   return(res)
 }
 
